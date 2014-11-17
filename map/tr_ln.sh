@@ -1,6 +1,13 @@
 set -e -o pipefail
 echo "Extracting TR_LN"
 
+#@TODO &FREEWAY, &RAMP &RECREATION need to be fixed see http://wiki.openstreetmap.org/wiki/CanVec:_Transportation_%28TR%29
+#@TODO # of lanes
+#@TODO surface type
+#@TODO highways should have ref tag set
+    #where `name:highway 55' ref=55
+    #where `name:highway 55/20' ref=55;20
+
 pre="INSERT INTO osm_ln (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
 mid=") AS osm_tags FROM tr_ln WHERE code::TEXT LIKE "
 end=");"
