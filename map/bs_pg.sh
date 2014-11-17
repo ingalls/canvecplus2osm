@@ -1,8 +1,16 @@
+set -e -o pipefail
 echo "Extracting BG_PG"
 
 pre="INSERT INTO osm_pg (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
 mid=") AS osm_tags FROM bs_pg WHERE code::TEXT LIKE "
 end=");"
+
+connect="psql -U postgres canvec"
+
+if [ $(echo "\d" | $connect | grep bg_pg | wc -l) = "0" ]; then
+    echo "  No Features for this layer"
+    exit 0
+fi
 
 echo "$pre ARRAY['landuse', 'residential'] $mid '137001%' $end" | $connect
 echo "$pre ARRAY['building', 'yes'] $mid '201001%' $end" | $connect
@@ -36,3 +44,5 @@ echo "$pre ARRAY['man_made', 'storage_tank'] $mid '208003%' $end" | $connect
 echo "$pre ARRAY['man_made', 'storage_tank', 'content', 'water'] $mid '208004%' $end" | $connect
 echo "$pre ARRAY['man_made', 'storage_tank'] $mid '208005%' $end" | $connect
 echo "$pre ARRAY['landuse', 'reservoir', 'note', 'underground reservoir'] $mid '238001%' $end" | $connect
+
+echo "  DONE"

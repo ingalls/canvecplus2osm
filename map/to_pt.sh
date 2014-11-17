@@ -1,4 +1,12 @@
+set -e -o pipefail
 echo "Extracting TO_PT"
+
+connect="psql -U postgres canvec"
+
+if [ $(echo "\d" | $connect | grep to_pt | wc -l) = "0" ]; then
+    echo "  No Features for this layer"
+    exit 0
+fi
 
 echo "
     CREATE TABLE tmp_to AS 
@@ -92,3 +100,5 @@ for CODE in BAY BCH CAPE CAVE CHAN CITY CLF CRAT FALL FOR GEOG GLAC HAM IR ISL L
             WHERE code = '$CODE');
     " | psql -U postgres canvec
 done
+
+echo "  DONE"
