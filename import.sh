@@ -32,10 +32,10 @@ for file in $area; do
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp
         
         for layer in bs en fo hd ic li lx ss to tr ve; do
-            echo "Retrieving ${layer}"
-            layer_pt=$( ls $TMP/$subdir/${layer}_*_0.shp* 2>/dev/null)
-            layer_ln=$( ls $TMP/$subdir/${layer}_*_1.shp* 2>/dev/null)
-            layer_pg=$( ls $TMP/$subdir/${layer}_*_2.shp* 2>/dev/null)
+            echo "Retrieving ${layer} From $TMP/$subdir"
+            layer_pt=$( ls $TMP/$subdir/${layer}_???????_0.shp 2>/dev/null || echo "" )
+            layer_ln=$( ls $TMP/$subdir/${layer}_???????_1.shp 2>/dev/null || echo "" )
+            layer_pg=$( ls $TMP/$subdir/${layer}_???????_2.shp 2>/dev/null || echo "" )
             for layertmp in $layer_pt; do
                 echo "COPYING $layer_pt"
                 ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln ${layer}_pt PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp
