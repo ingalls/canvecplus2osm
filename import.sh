@@ -10,7 +10,7 @@ if [ $(echo "\d" | psql -U postgres canvec | grep canvec_tmp | wc -l) != "0" ]; 
     exit 1
 fi
 
-area=$( curl ftp://ftp2.cits.rncan.gc.ca/pub/canvec+/shp/ | cut -c57-60 )
+area=$( wget -qO- ftp://ftp2.cits.rncan.gc.ca/pub/canvec+/shp/ | grep "</a>" | sed '/^$/d;s/[[:blank:]]//g' | sed 's/^2014.*">//' | sed 's/\/<\/a>//' )
 
 for file in $area; do
     wget -nH --cut-dirs=100 -m ftp://ftp2.cits.rncan.gc.ca/pub/canvec+/shp/$file/* -P $TMP
@@ -21,9 +21,9 @@ for file in $area; do
     for sub in $subAreas; do
         subdir=$( echo "$sub" | sed 's/_shp.zip//' | sed 's/canvec_//')
         mkdir $TMP/$subdir
-        unzip $TMP/$sub -d $TMP/$subdir
-        unzip $TMP/cgn_${subdir,,}_shp_fra.zip -d $TMP/$subdir
-        unzip $TMP/cgn_${subdir,,}_shp_eng.zip -d $TMP/$subdir
+        unzip -o $TMP/$sub -d $TMP/$subdir
+        unzip -o $TMP/cgn_${subdir,,}_shp_fra.zip -d $TMP/$subdir
+        unzip -o $TMP/cgn_${subdir,,}_shp_eng.zip -d $TMP/$subdir
         
         rm $TMP/$sub
         rm $TMP/cgn_*
@@ -32,6 +32,7 @@ for file in $area; do
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp
         
         for layer in bs en fo hd ic li lx ss to tr ve; do
+            echo "Retrieving ${layer}"
             layer_pt=$( ls $TMP/$subdir/${layer}_*_0.shp* 2>/dev/null)
             layer_ln=$( ls $TMP/$subdir/${layer}_*_1.shp* 2>/dev/null)
             layer_pg=$( ls $TMP/$subdir/${layer}_*_2.shp* 2>/dev/null)
