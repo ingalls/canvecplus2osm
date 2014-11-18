@@ -1,14 +1,12 @@
 set -e -o pipefail
-echo "Extracting IC_PG"
 
 pre="INSERT INTO osm_pg (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
-mid=") AS osm_tags FROM ice_pg WHERE code::TEXT LIKE "
+mid=") AS osm_tags FROM ic_pg WHERE code::TEXT LIKE "
 end=");"
 
-connect="psql -U postgres canvec"
+connect="psql -q -U postgres canvec"
 
 if [ $(echo "\d" | $connect | grep ic_pg | wc -l) = "0" ]; then
-    echo "  No Features for this layer"
     exit 0
 fi
 
@@ -22,4 +20,3 @@ echo "$pre ARRAY['landuse', 'landfill', 'note', 'Industrial solid depot'] $mid '
 echo "$pre ARRAY['landuse', 'commercial', 'fixme', 'Mix of both industrial and commercial areas'] $mid '136003%' $end" | $connect
 echo "$pre ARRAY['landuse', 'industrial', 'note', 'Lumber yard'] $mid '211001%' $end" | $connect
 
-echo "  DONE"

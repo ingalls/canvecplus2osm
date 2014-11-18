@@ -32,7 +32,7 @@ fail() {
     exit 1
 }
 
-connect="psql -U postgres canvec"
+connect="psql -q -U postgres canvec"
 
 log "Is parllel installed?" 0
 type parallel > /dev/null 2>&1 || fail && pass
@@ -84,32 +84,30 @@ for area in $areas; do
     log "Processing Area $area" 0 "head"
     subAreas=$(<$CACHE/$area)
     log "Downloading CanVec+" 2
-    parallel "wget -q {} -P $TMP" ::: <$CACHE/$area && pass
+    parallel "wget -nc -q {} -P $TMP" ::: <$CACHE/$area && pass
     log "Downloading CGN-en" 2
-    parallel "wget -q {} -P $TMP" ::: <$CACHE/$area-en && pass
+    parallel "wget -nc -q {} -P $TMP" ::: <$CACHE/$area-en && pass
     log "Downloading CGN-fr" 2
-    parallel "wget -q {} -p $TMP" ::: <$CACHE/$area-fr && pass
+    parallel "wget -nc -q {} -P $TMP" ::: <$CACHE/$area-fr && pass
 
     for sub in $subAreas; do
-	log "Processing Sub Area $sub" 2 "head"
-        subdir=$( echo "$sub" | sed 's/_shp.zip//' | sed 's/canvec_//')
-        mkdir $TMP/$subdir
-	
-	log "Unzipping CanVec+" 4
-        unzip -qq -o $TMP/$sub -d $TMP/$subdir || fail && pass
-	log "Unzipping CGN-fr" 4
-        unzip -qq -o $TMP/cgn_${subdir,,}_shp_fra.zip -d $TMP/$subdir || fail && pass
-	log "Unzipping CGN-en" 4
-        unzip -qq -o $TMP/cgn_${subdir,,}_shp_eng.zip -d $TMP/$subdir || fail && pass
-        
-        rm $TMP/$sub
-        rm $TMP/cgn_*
+        log "Processing Sub Area canvec_$(echo $sub | sed 's/ftp.*canvec_//' )" 2 "head"
+        subdir=$( echo "$sub" | sed 's/_shp.zip//' | sed 's/^.*canvec_//')
+        mkdir -p $TMP/$subdir
 
-	log "Importing CGN-en" 4
+        log "Unzipping CanVec+ $subdir" 4
+        unzip -qq -o $TMP/canvec_${subdir}_shp.zip -d $TMP/$subdir || fail && pass
+        log "Unzipping CGN-fr $subdir" 4
+        unzip -qq -o $TMP/cgn_${subdir,,}_shp_fra.zip -d $TMP/$subdir 2>/dev/null || fail && pass
+        log "Unzipping CGN-en $subdir" 4
+        unzip -qq -o $TMP/cgn_${subdir,,}_shp_eng.zip -d $TMP/$subdir 2>/dev/null || fail && pass
+
+        log "Importing CGN-en" 4
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_eng PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_geoname.shp || fail && pass
-	log "Importing CGN-fr" 4     
-	ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp || fail && pass
+        log "Importing CGN-fr" 4     
+        ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp || fail && pass
         
+        log "Creating OSM Tables" 4
        	echo "
             BEGIN;
             CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
@@ -119,29 +117,34 @@ for area in $areas; do
             CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
             COMMIT;        
-        " | psql -U postgres canvec
+        " | $connect 1>/dev/null || fail && pass
 
         for layer in bs en fo hd ic li lx ss to tr ve; do
-            echo "Retrieving ${layer} From $TMP/$subdir"
+            log "Retrieving ${layer} From $TMP/$subdir" 4 "head"
             layer_pt=$( ls $TMP/$subdir/${layer}_???????_0.shp 2>/dev/null || echo "" )
             layer_ln=$( ls $TMP/$subdir/${layer}_???????_1.shp 2>/dev/null || echo "" )
             layer_pg=$( ls $TMP/$subdir/${layer}_???????_2.shp 2>/dev/null || echo "" )
             for layertmp in $layer_pt; do
-                echo "COPYING $layer_pt"
-                ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln ${layer}_pt PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp
+                log "Importing $layer pt" 6
+                ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln ${layer}_pt PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp || fail && pass
             done
             for layertmp in $layer_ln; do
-                echo "COPYING $layer_ln"
-                ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt LINESTRING -nln ${layer}_ln PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp
+                log "Importing $layer ln" 6
+                ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt LINESTRING -nln ${layer}_ln PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp || fail && pass
             done
             for layertmp in $layer_pg; do
-                echo "COPYING $layer_pg"
-                ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt PROMOTE_TO_MULTI -nln ${layer}_pg PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp
+                log "Importing $layer pg" 6
+                ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt PROMOTE_TO_MULTI -nln ${layer}_pg PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp || fail && pass
             done
-	
-		    ./map/${layer}_pt.sh
-            ./map/${layer}_ln.sh
-            ./map/${layer}_pg.sh
+
+            log "Coverting ${layer}_pt to OSM tags" 6
+            ./map/${layer}_pt.sh || fail && pass
+            log "Coverting ${layer}_ln to OSM tags" 6
+            ./map/${layer}_ln.sh || fail && pass
+            log "Coverting ${layer}_pg to OSM tags" 6
+            ./map/${layer}_pg.sh || fail && pass
         done
+        
+        exit
     done
 done

@@ -1,7 +1,3 @@
-echo "DROP TMP DIR"
-TMP="$(dirname $0)/tmp"
-CACHE="$(dirname $0)/cache"
-rm -rf $TMP
 
 echo "
     DROP DATABASE IF EXISTS canvec;

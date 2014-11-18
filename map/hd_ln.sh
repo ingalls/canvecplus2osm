@@ -1,14 +1,12 @@
 set -e -o pipefail
-echo "Extracting HD_LN"
 
 pre="INSERT INTO osm_ln (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
 mid=") AS osm_tags FROM hd_ln WHERE code::TEXT LIKE "
 end=");"
 
-connect="psql -U postgres canvec"
+connect="psql -q -U postgres canvec"
 
 if [ $(echo "\d" | $connect | grep hd_ln | wc -l) = "0" ]; then
-    echo "  No Features for this layer"
     exit 0
 fi
 
@@ -44,4 +42,3 @@ echo "$pre ARRAY['waterway','stream','water','intermittent'] $mid '147018%' $end
 echo "$pre ARRAY['waterway','stream'] $mid '147018%' $end" | $connect
 echo "$pre ARRAY['waterway','stream'] $mid '147018%' $end" | $connect
 
-echo "  DONE"

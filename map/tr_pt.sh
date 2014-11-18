@@ -1,14 +1,12 @@
 set -e -o pipefail
-echo "Extracting TR_PT"
 
 pre="INSERT INTO osm_pt (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
 mid=") AS osm_tags FROM tr_pt WHERE code::TEXT LIKE "
 end=");"
 
-connect="psql -U postgres canvec"
+connect="psql -q -U postgres canvec"
 
 if [ $(echo "\d" | $connect | grep tr_pt | wc -l) = "0" ]; then
-    echo "  No Features for this layer"
     exit 0
 fi
 
@@ -28,4 +26,3 @@ echo "$pre ARRAY['barier','gate'] $mid '178001%' $end" | $connect
 echo "$pre ARRAY['highway','toll'] $mid '179001%' $end" | $connect
 echo "$pre ARRAY['railway','turntable'] $mid '232001%' $end" | $connect
 
-echo "  DONE"

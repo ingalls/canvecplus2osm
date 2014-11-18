@@ -1,14 +1,12 @@
 set -e -o pipefail
-echo "Extracting IC_PT"
 
 pre="INSERT INTO osm_pt (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
 mid=") AS osm_tags FROM ic_pt WHERE code::TEXT LIKE "
 end=");"
 
-connect="psql -U postgres canvec"
+connect="psql -q -U postgres canvec"
 
 if [ $(echo "\d" | $connect | grep ic_pt | wc -l) = "0" ]; then
-    echo "  No Features for this layer"
     exit 0
 fi
 
@@ -19,4 +17,3 @@ echo "$pre ARRAY['landuse', 'commercial', 'fixme', 'Mix of both industrial and c
 echo "$pre ARRAY['landuse', 'industrial', 'note', 'auto wrecker'] $mid '236001%' $end" | $connect
 echo "$pre ARRAY['landuse', 'quarry', 'fixme', 'Identify extracted resource tag value'] $mid '260001%' $end" | $connect
 
-echo "  DONE"

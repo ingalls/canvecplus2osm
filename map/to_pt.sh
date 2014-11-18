@@ -1,10 +1,8 @@
 set -e -o pipefail
-echo "Extracting TO_PT"
 
-connect="psql -U postgres canvec"
+connect="psql -q -U postgres canvec"
 
 if [ $(echo "\d" | $connect | grep to_pt | wc -l) = "0" ]; then
-    echo "  No Features for this layer"
     exit 0
 fi
 
@@ -44,7 +42,7 @@ echo "
     UPDATE tmp_to
         SET bi = en
         WHERE bi IS NULL;
-" | psql -U postgres canvec;
+" | $connect
 
 BAY="'natural', 'bay'"
 BCH="'natural', 'beach'"
@@ -98,7 +96,6 @@ for CODE in BAY BCH CAPE CAVE CHAN CITY CLF CRAT FALL FOR GEOG GLAC HAM IR ISL L
                 END
             FROM tmp_to
             WHERE code = '$CODE');
-    " | psql -U postgres canvec
+    " | $connect
 done
 
-echo "  DONE"
