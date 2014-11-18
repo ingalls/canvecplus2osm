@@ -3,7 +3,10 @@
 set -e -o pipefail
 TMP="$(dirname $0)/tmp"
 CACHE="$(dirname $0)/cache"
+
 mkdir -p $TMP
+mkdir -p $CACHE
+
 connect="psql -U postgres canvec"
 
 if [ $(echo "\d" | psql -U postgres canvec | grep canvec_tmp | wc -l) != "0" ]; then
@@ -11,7 +14,12 @@ if [ $(echo "\d" | psql -U postgres canvec | grep canvec_tmp | wc -l) != "0" ]; 
     exit 1
 fi
 
-area=$( wget -qO- ftp://ftp2.cits.rncan.gc.ca/pub/canvec+/shp/ | grep "</a>" | sed '/^$/d;s/[[:blank:]]//g' | sed 's/^2014.*">//' | sed 's/\/<\/a>//' )
+if [ -e $CACHE/area ]; then
+    area=$(<$CACHE/area)
+else
+    area=$( wget -qO- ftp://ftp2.cits.rncan.gc.ca/pub/canvec+/shp/ | grep "</a>" | sed '/^$/d;s/[[:blank:]]//g' | sed 's/^2014.*">//' | sed 's/\/<\/a>//' )
+    echo $area > $CACHE/test
+fi
 
 for file in $area; do
     wget -nH --cut-dirs=100 -m ftp://ftp2.cits.rncan.gc.ca/pub/canvec+/shp/$file/* -P $TMP
@@ -32,19 +40,15 @@ for file in $area; do
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_eng PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_geoname.shp
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp
         
-	echo "
+	    echo "
+            BEGIN;
             CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_pt', 'geom', '4326', 'POINT', 2);
-        " | psql -U postgres canvec
-
-        echo "
             CREATE TABLE osm_ln (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_ln', 'geom', '4326', 'LINESTRING', 2);
-        " | psql -U postgres canvec
-
-        echo "
             CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
+            COMMIT;        
         " | psql -U postgres canvec
 
         for layer in bs en fo hd ic li lx ss to tr ve; do
@@ -65,11 +69,9 @@ for file in $area; do
                 ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt PROMOTE_TO_MULTI -nln ${layer}_pg PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp
             done
 	
-		    source ./map/${layer}_pt.sh
-            source ./map/${layer}_ln.sh
-            source ./map/${layer}_pg.sh
+		    ./map/bs_pt.sh
+            ./map/bs_ln.sh
+            ./map/bs_pg.sh
         done
     done
 done
-
-
