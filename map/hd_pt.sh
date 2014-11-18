@@ -1,16 +1,34 @@
-"'waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'",'145001%'
-"'waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'",'145002%'
-"'waterway','dam','area','yes'",'145003%'
-"'waterway','lock_gate'",'145004%'
-"'leisure','slipway'",'145005%'
-"'man_made','pier','mooring','yes'",'145007%'
-"'man_made','pier','mooring','yes'",'145008%'
-"'waterway','dock','area','yes'",'145011%'
-"'waterway','waterfall'",'146002%'
-"'waterway','rapids','area','yes'",'146003%'
-"'natural','land'",'146004%'
-"'waterway','stream','note','Disappearing stream'",'146005%'
-"'historic','wreck'",'146006%'
-"'highway','ford'",'146007%'
-"'natural','land'",'146104%'
-"'historic','wreck'",'146106%'
+set -e -o pipefail
+echo "Extracting HD_PT"
+
+pre="INSERT INTO osm_pt (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
+mid=") AS osm_tags FROM hd_pt WHERE code::TEXT LIKE "
+end=");"
+
+connect="psql -U postgres canvec"
+
+if [ $(echo "\d" | $connect | grep hd_pt | wc -l) = "0" ]; then
+    echo "  No Features for this layer"
+    exit 0
+fi
+
+echo "$pre ARRAY['man_made', 'beacon'] $mid '125001%' $end" | $connect
+
+echo "$pre ARRAY['waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'] $mid '145001%' $end" | $connect
+echo "$pre ARRAY['waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'] $mid '145002%' $end" | $connect
+echo "$pre ARRAY['waterway','dam','area','yes'] $mid '145003%' $end" | $connect
+echo "$pre ARRAY['waterway','lock_gate'] $mid '145004%' $end" | $connect
+echo "$pre ARRAY['leisure','slipway'] $mid '145005%' $end" | $connect
+echo "$pre ARRAY['man_made','pier','mooring','yes'] $mid '145007%' $end" | $connect
+echo "$pre ARRAY['man_made','pier','mooring','yes'] $mid '145008%' $end" | $connect
+echo "$pre ARRAY['waterway','dock','area','yes'] $mid '145011%' $end" | $connect
+echo "$pre ARRAY['waterway','waterfall'] $mid '146002%' $end" | $connect
+echo "$pre ARRAY['waterway','rapids','area','yes'] $mid '146003%' $end" | $connect
+echo "$pre ARRAY['natural','land'] $mid '146004%' $end" | $connect
+echo "$pre ARRAY['waterway','stream','note','Disappearing stream'] $mid '146005%' $end" | $connect
+echo "$pre ARRAY['historic','wreck'] $mid '146006%' $end" | $connect
+echo "$pre ARRAY['highway','ford'] $mid '146007%' $end" | $connect
+echo "$pre ARRAY['natural','land'] $mid '146104%' $end" | $connect
+echo "$pre ARRAY['historic','wreck'] $mid '146106%' $end" | $connect
+
+echo "  DONE"

@@ -1,31 +1,47 @@
-"'waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'",'145001%'
-"'waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'",'145002%'
-"'waterway','dam','area','yes'",'145003%'
-"'waterway','lock_gate'",'145004%'
-"'man_made','pier','mooring','yes'",'145007%'
-"'man_made','pier','mooring','yes'",'145008%'
-"'man_made','breakwater'",'145009%'
-"'man_made','dyke'",'145010%'
-"'waterway','dock','area','yes'",'145011%'
-"'man_made','breakwater'",'145109%'
-"'waterway','waterfall'",'146002%'
-"'waterway','rapids','area','yes'",'146003%'
-"'highway','ford'",'146007%'
-"'waterway','stream','fixme','watercourse type','water','intermittent'",'147011%'
-"'waterway','stream','fixme','watercourse type'",'147011%'
-"'waterway','stream','fixme','watercourse type'",'147011%'
-"'waterway','canal','water','intermittent'",'147012%'
-"'waterway','canal'",'147012%'
-"'waterway','canal'",'147012%'
-"'man_made','pipeline','type','water','water','intermittent'",'147013%'
-"'man_made','pipeline','type','water'",'147013%'
-"'man_made','pipeline','type','water'",'147013%'
-"'waterway','ditch','water','intermittent'",'147014%'
-"'waterway','ditch'",'147014%'
-"'waterway','ditch'",'147014%'
-"'waterway','stream','water','intermittent'",'147017%'
-"'waterway','stream'",'147017%'
-"'waterway','stream'",'147017%'
-"'waterway','stream','water','intermittent'",'147018%'
-"'waterway','stream'",'147018%'
-"'waterway','stream'",'147018%'
+set -e -o pipefail
+echo "Extracting HD_LN"
+
+pre="INSERT INTO osm_ln (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
+mid=") AS osm_tags FROM hd_ln WHERE code::TEXT LIKE "
+end=");"
+
+connect="psql -U postgres canvec"
+
+if [ $(echo "\d" | $connect | grep hd_ln | wc -l) = "0" ]; then
+    echo "  No Features for this layer"
+    exit 0
+fi
+
+echo "$pre ARRAY['waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'] $mid '145001%' $end" | $connect
+echo "$pre ARRAY['waterway','dam','fixme','Unidentified manmade hydrographic feature type','area','yes'] $mid '145002%' $end" | $connect
+echo "$pre ARRAY['waterway','dam','area','yes'] $mid '145003%' $end" | $connect
+echo "$pre ARRAY['waterway','lock_gate'] $mid '145004%' $end" | $connect
+echo "$pre ARRAY['man_made','pier','mooring','yes'] $mid '145007%' $end" | $connect
+echo "$pre ARRAY['man_made','pier','mooring','yes'] $mid '145008%' $end" | $connect
+echo "$pre ARRAY['man_made','breakwater'] $mid '145009%' $end" | $connect
+echo "$pre ARRAY['man_made','dyke'] $mid '145010%' $end" | $connect
+echo "$pre ARRAY['waterway','dock','area','yes'] $mid '145011%' $end" | $connect
+echo "$pre ARRAY['man_made','breakwater'] $mid '145109%' $end" | $connect
+echo "$pre ARRAY['waterway','waterfall'] $mid '146002%' $end" | $connect
+echo "$pre ARRAY['waterway','rapids','area','yes'] $mid '146003%' $end" | $connect
+echo "$pre ARRAY['highway','ford'] $mid '146007%' $end" | $connect
+echo "$pre ARRAY['waterway','stream','fixme','watercourse type','water','intermittent'] $mid '147011%' $end" | $connect
+echo "$pre ARRAY['waterway','stream','fixme','watercourse type'] $mid '147011%' $end" | $connect
+echo "$pre ARRAY['waterway','stream','fixme','watercourse type'] $mid '147011%' $end" | $connect
+echo "$pre ARRAY['waterway','canal','water','intermittent'] $mid '147012%' $end" | $connect
+echo "$pre ARRAY['waterway','canal'] $mid '147012%' $end" | $connect
+echo "$pre ARRAY['waterway','canal'] $mid '147012%' $end" | $connect
+echo "$pre ARRAY['man_made','pipeline','type','water','water','intermittent'] $mid '147013%' $end" | $connect
+echo "$pre ARRAY['man_made','pipeline','type','water'] $mid '147013%' $end" | $connect
+echo "$pre ARRAY['man_made','pipeline','type','water'] $mid '147013%' $end" | $connect
+echo "$pre ARRAY['waterway','ditch','water','intermittent'] $mid '147014%' $end" | $connect
+echo "$pre ARRAY['waterway','ditch'] $mid '147014%' $end" | $connect
+echo "$pre ARRAY['waterway','ditch'] $mid '147014%' $end" | $connect
+echo "$pre ARRAY['waterway','stream','water','intermittent'] $mid '147017%' $end" | $connect
+echo "$pre ARRAY['waterway','stream'] $mid '147017%' $end" | $connect
+echo "$pre ARRAY['waterway','stream'] $mid '147017%' $end" | $connect
+echo "$pre ARRAY['waterway','stream','water','intermittent'] $mid '147018%' $end" | $connect
+echo "$pre ARRAY['waterway','stream'] $mid '147018%' $end" | $connect
+echo "$pre ARRAY['waterway','stream'] $mid '147018%' $end" | $connect
+
+echo "  DONE"

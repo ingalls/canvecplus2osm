@@ -2,6 +2,7 @@
 
 set -e -o pipefail
 TMP="$(dirname $0)/tmp"
+CACHE="$(dirname $0)/cache"
 mkdir -p $TMP
 connect="psql -U postgres canvec"
 
@@ -31,6 +32,21 @@ for file in $area; do
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_eng PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_geoname.shp
         ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp
         
+	echo "
+            CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
+            SELECT AddGeometryColumn('osm_pt', 'geom', '4326', 'POINT', 2);
+        " | psql -U postgres canvec
+
+        echo "
+            CREATE TABLE osm_ln (osm_tags HSTORE, id SERIAL);
+            SELECT AddGeometryColumn('osm_ln', 'geom', '4326', 'LINESTRING', 2);
+        " | psql -U postgres canvec
+
+        echo "
+            CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
+            SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
+        " | psql -U postgres canvec
+
         for layer in bs en fo hd ic li lx ss to tr ve; do
             echo "Retrieving ${layer} From $TMP/$subdir"
             layer_pt=$( ls $TMP/$subdir/${layer}_???????_0.shp 2>/dev/null || echo "" )
@@ -48,27 +64,11 @@ for file in $area; do
                 echo "COPYING $layer_pg"
                 ogr2ogr -append -t_srs EPSG:4326 -f "PostgreSQL" -nlt PROMOTE_TO_MULTI -nln ${layer}_pg PG:"host='localhost' user='postgres' dbname='canvec'" $layertmp
             done
+	
+		    source ./map/${layer}_pt.sh
+            source ./map/${layer}_ln.sh
+            source ./map/${layer}_pg.sh
         done
-                
-        echo "
-            CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
-            SELECT AddGeometryColumn('osm_pt', 'geom', '4326', 'POINT', 2);
-        " | psql -U postgres canvec
-
-        echo "
-            CREATE TABLE osm_ln (osm_tags HSTORE, id SERIAL);
-            SELECT AddGeometryColumn('osm_ln', 'geom', '4326', 'LINESTRING', 2);
-        " | psql -U postgres canvec
-
-        echo "
-            CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
-            SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
-        " | psql -U postgres canvec
-
-        #source ./map/${layer}_pt.sh
-        #source ./map/${layer}_ln.sh
-        #source ./map/${layer}_pg.sh
-        exit 0
     done
 done
 
