@@ -90,6 +90,18 @@ for area in $areas; do
     log "Downloading CGN-fr" 2
     parallel "wget -nc -q {} -P $TMP" ::: <$CACHE/$area-fr && pass
 
+    log "Creating OSM Tables" 2
+    echo "
+        BEGIN;
+        CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
+        SELECT AddGeometryColumn('osm_pt', 'geom', '4326', 'POINT', 2);
+        CREATE TABLE osm_ln (osm_tags HSTORE, id SERIAL);
+        SELECT AddGeometryColumn('osm_ln', 'geom', '4326', 'LINESTRING', 2);
+        CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
+        SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
+        COMMIT;        
+    " | $connect 1>/dev/null || fail && pass
+
     for sub in $subAreas; do
         log "Processing Sub Area canvec_$(echo $sub | sed 's/ftp.*canvec_//' )" 2 "head"
         subdir=$( echo "$sub" | sed 's/_shp.zip//' | sed 's/^.*canvec_//')
@@ -103,22 +115,10 @@ for area in $areas; do
         unzip -qq -o $TMP/cgn_${subdir,,}_shp_eng.zip -d $TMP/$subdir 2>/dev/null || fail && pass
 
         log "Importing CGN-en" 4
-        ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_eng PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_geoname.shp || fail && pass
+        ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_eng PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/${subdir,,}_geoname.shp || fail && pass
         log "Importing CGN-fr" 4     
-        ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/001k_toponyme.shp || fail && pass
+        ogr2ogr -t_srs EPSG:4326 -f "PostgreSQL" -nlt POINT -nln cgn_fra PG:"host='localhost' user='postgres' dbname='canvec'" $TMP/$subdir/${subdir,,}_toponyme.shp || fail && pass
         
-        log "Creating OSM Tables" 4
-       	echo "
-            BEGIN;
-            CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
-            SELECT AddGeometryColumn('osm_pt', 'geom', '4326', 'POINT', 2);
-            CREATE TABLE osm_ln (osm_tags HSTORE, id SERIAL);
-            SELECT AddGeometryColumn('osm_ln', 'geom', '4326', 'LINESTRING', 2);
-            CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
-            SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
-            COMMIT;        
-        " | $connect 1>/dev/null || fail && pass
-
         for layer in bs en fo hd ic li lx ss to tr ve; do
             log "Retrieving ${layer} From $TMP/$subdir" 4 "head"
             layer_pt=$( ls $TMP/$subdir/${layer}_???????_0.shp 2>/dev/null || echo "" )
@@ -162,6 +162,14 @@ for area in $areas; do
             DROP TABLE IF EXISTS tmp_to;
         " | psql -q -U postgres canvec || fail && pass
 
-        exit
+        log "Outputting to OSM" 6 "head"
+        #POSTGRES=>OSM script
+
+        echo "
+            DROP TABLE IF EXISTS osm_pg;
+            DROP TABLE IF EXISTS osm_ln;
+            DROP TABLE IF EXISTS osm_pt;
+        " | psql -q -U postgres canvec
     done
+    exit
 done
