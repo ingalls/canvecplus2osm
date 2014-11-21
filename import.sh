@@ -112,10 +112,13 @@ for area in $areas; do
             BEGIN;
             CREATE TABLE osm_pt (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_pt', 'geom', '4326', 'POINT', 2);
+            CREATE INDEX osm_pt_gidx ON osm_pt USING GIST (geom);
             CREATE TABLE osm_ln (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_ln', 'geom', '4326', 'LINESTRING', 2);
+            CREATE INDEX osm_ln_gidx ON osm_ln USING GIST (geom);
             CREATE TABLE osm_pg (osm_tags HSTORE, id SERIAL);
             SELECT AddGeometryColumn('osm_pg', 'geom', '4326', 'MULTIPOLYGON', 2);
+            CREATE INDEX osm_pg_gidx ON osm_pg USING GIST (geom);
             COMMIT;        
         " | $connect 1>/dev/null || fail && pass 
 
@@ -165,11 +168,14 @@ for area in $areas; do
         log "Outputting to OSM" 6 "head"
         #POSTGRES=>OSM script
 
+        #Only import first iteration for testing
+        if [ ! -z $TEST ]; then exit; fi
+
         echo "
             DROP TABLE IF EXISTS osm_pg;
             DROP TABLE IF EXISTS osm_ln;
             DROP TABLE IF EXISTS osm_pt;
         " | psql -q -U postgres canvec
+ 
     done
-    exit
 done
