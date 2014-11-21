@@ -1,7 +1,7 @@
 set -e -o pipefail
 
 pre="INSERT INTO osm_pg (geom, osm_tags) ( SELECT wkb_geometry AS geom, hstore( "
-mid=") AS osm_tags FROM bs_pg WHERE code::TEXT LIKE "
+mid=") AS osm_tags FROM fo_pg WHERE code::TEXT LIKE "
 end=");"
 
 connect="psql -q -U postgres canvec"

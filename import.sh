@@ -143,8 +143,25 @@ for area in $areas; do
             ./map/${layer}_ln.sh || fail && pass
             log "Coverting ${layer}_pg to OSM tags" 6
             ./map/${layer}_pg.sh || fail && pass
+        
+        done
+
+
+        log "Dropping original data" 4 "head"
+        for DB in $( echo "\d" | psql -U postgres canvec | grep "| .._.. " | sed -e 's/ public . //' -e 's/  .*//' ); do
+            log "Dropping $DB" 6
+            echo "
+                DROP TABLE $DB;
+            " | psql -q -U postgres canvec || fail && pass
         done
         
+        log "Dropping MISC tables" 6
+        echo "
+            DROP TABLE IF EXISTS cgn_eng;
+            DROP TABLE IF EXISTS cgn_fra;
+            DROP TABLE IF EXISTS tmp_to;
+        " | psql -q -U postgres canvec || fail && pass
+
         exit
     done
 done
