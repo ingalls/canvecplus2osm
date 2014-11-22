@@ -10,16 +10,9 @@
 
 --DROP Previous Tables
 DROP TABLE IF EXISTS nodes;
+DROP SEQUENCE IF EXISTS node_ids_seq;
 DROP TABLE IF EXISTS ways;
 DROP TABLE IF EXISTS relations;
-
-CREATE TABLE nodes (
-    id      SERIAL PRIMARY KEY,
-    node    GEOMETRY(Point, 4326) UNIQUE,
-    tags    HSTORE
-);
-
-CREATE INDEX node_gidx ON nodes USING GIST (node);
 
 CREATE TABLE ways (
     id      SERIAL PRIMARY KEY,
