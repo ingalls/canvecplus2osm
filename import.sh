@@ -15,27 +15,7 @@ yellow="\e[33m"
 mkdir -p $TMP
 mkdir -p $CACHE
 
-log() {
-    spaces=$(printf %${2}s)
-    if [ "$3" = "head" ]; then
-        echo "$spaces- $1"
-    else
-        echo -n "$spaces- $1"
-    fi
-}
-
-pass() {
-    echo -e " [${green}DONE${reset}]"
-}
-
-warn() {
-    echo -e " [${yellow}WARN${reset}]"
-}
-
-fail() {
-    echo -e " [${red}FAIL${reset}]"
-    exit 1
-}
+source $(dirname $0)/lib/logger.sh
 
 connect="psql -q -U postgres canvec"
 

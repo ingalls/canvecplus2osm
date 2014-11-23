@@ -1,6 +1,7 @@
 #/bin/bash
 set -e
 
+source $(dirname $0)/logger.sh
 psql -q -U postgres canvec -f $(dirname $0)/osm_schema.sql
 
 CPUNUM=$(node -e 'console.log(require("os").cpus().length);')
