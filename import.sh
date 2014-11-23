@@ -25,10 +25,15 @@ log() {
 }
 
 pass() {
-    echo -e " [${green}done${reset}]"
+    echo -e " [${green}DONE${reset}]"
 }
+
+warn() {
+    echo -e " [${yellow}WARN${reset}]"
+}
+
 fail() {
-    echo -e " [${red}fail${reset}]"
+    echo -e " [${red}FAIL${reset}]"
     exit 1
 }
 
