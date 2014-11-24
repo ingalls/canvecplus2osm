@@ -28,27 +28,3 @@ CREATE TABLE relations (
     tags    HSTORE
 );
 
-CREATE OR REPLACE FUNCTION insert_node (newnode GEOMETRY) RETURNS VOID AS
-$$
-BEGIN
-    LOOP
-        UPDATE nodes SET node = newnode 
-            WHERE
-                ST_Equals(node, newnode) AND 
-                node && newnode;
-        IF found THEN
-            RETURN;
-        END IF;
-
-        RAISE NOTICE 'NOT FOUND';
-
-        BEGIN
-            INSERT INTO nodes (node) VALUES (newnode);
-            RETURN;
-        EXCEPTION WHEN unique_violation THEN
-            --Ignore this and try loop again
-        END;
-    END LOOP;
-END;
-$$
-LANGUAGE plpgsql;

@@ -4,6 +4,7 @@ set -e
 source $(dirname $0)/logger.sh
 log "Generating OSM table scheme" 2
 psql -q -U postgres canvec -f $(dirname $0)/osm_schema.sql 2>/dev/null || fail && pass
+psql -q -U postgres canvec -f $(dirname $0)/ref_node.sql   2>/dev/null
 
 CPUNUM=$(node -e 'console.log(require("os").cpus().length);')
 CPUSEQ=$(seq 0 $(node -e 'console.log(require("os").cpus().length - 1);'))
@@ -32,8 +33,9 @@ log "Assigning OSM tags to nodes" 2
 parallel "echo \"UPDATE nodes SET tags = osm_tags FROM osm_pt WHERE ST_Equals(osm_pt.geom, nodes.geom) AND (nodes.id % $CPUNUM) = {};\" | $PSQL" ::: $CPUSEQ || fail && pass
 
 log "Converting Line Geometry to Ways with node references" 2 
-#@TODO
-warn
+echo "
+    SELECT ref_node(geom) FROM osm_pg;
+" | $PSQL
 
 log "Converting Non-Multi Polygonal Geometry to Ways with node references" 2
 #@TODO
