@@ -76,7 +76,7 @@ for area in $areas; do
     parallel "wget -nc -q {} -P $TMP" ::: <$CACHE/$area-fr && pass
 
     for sub in $subAreas; do
-        log "Processing Sub Area canvec_$(echo $sub | sed 's/ftp.*canvec_//' )" 2 "head"
+        log "Importing Sub Area canvec_$(echo $sub | sed 's/ftp.*canvec_//' )" 2 "head"
         subdir=$( echo "$sub" | sed 's/_shp.zip//' | sed 's/^.*canvec_//')
         mkdir -p $TMP/$subdir
 
@@ -150,8 +150,8 @@ for area in $areas; do
             DROP TABLE IF EXISTS tmp_to;
         " | psql -q -U postgres canvec || fail && pass
 
-        log "Outputting to OSM" 6 "head"
-        #POSTGRES=>OSM script
+        log "Converting $subdir to OSM" 0 "head"
+        $(dirname $0)/lib/osm-create.sh
 
         #Only import first iteration for testing
         if [ ! -z $TEST ]; then exit; fi
