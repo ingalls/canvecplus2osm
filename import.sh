@@ -19,7 +19,7 @@ source $(dirname $0)/lib/logger.sh
 
 connect="psql -q -U postgres canvec"
 
-log "Is parllel installed?" 0
+log "Is parallel installed?" 0
 type parallel > /dev/null 2>&1 || fail && pass
 
 log "Is ogr2ogr installed?" 0
