@@ -6,12 +6,6 @@ set -e -o pipefail
 TMP="$(dirname $0)/tmp"
 CACHE="$(dirname $0)/cache"
 
-#colours
-green="\e[32m"
-reset="\e[39m"
-red="\e[31m"
-yellow="\e[33m"
-
 mkdir -p $TMP
 mkdir -p $CACHE
 
