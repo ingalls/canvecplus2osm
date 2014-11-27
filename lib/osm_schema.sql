@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS itsec_pt;
 
 CREATE TABLE ways (
     id      SERIAL PRIMARY KEY,
-    nodes   integer[],
+    nodes   BIGINT[],
     tags    HSTORE
 );
 
