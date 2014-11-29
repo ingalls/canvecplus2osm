@@ -12,8 +12,8 @@ BEGIN
             nodeArray := array_append(nodeArray, id);
         END LOOP;
         INSERT INTO ways(nodes, tags) VALUES (nodeArray, tags);
-    ELSIF GeometryType(poly) = 'MULTIPOLYGON' THEN
-        IF (SELECT ST_NumInteriorRing(poly)) = 1 THEN
+    ELSIF GeometryType(poly) = 'POLYGON' THEN
+        IF (SELECT ST_NumInteriorRing(poly)) = 0 THEN
             RAISE NOTICE 'WAY';
         ELSE
             RAISE NOTICE 'RELATION';
