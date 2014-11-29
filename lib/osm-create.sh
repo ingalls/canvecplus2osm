@@ -32,14 +32,15 @@ echo "
         (SELECT (ST_DumpPoints(geom)).geom FROM osm_pg);
 
     ALTER TABLE nodes ADD COLUMN tags HSTORE;
-    ALTER TABLE nodes ADD COLUMN id UNIQUE BIGINT;
+    ALTER TABLE nodes ADD COLUMN id BIGINT;
+    ALTER TABLE nodes ADD UNIQUE (id);
     UPDATE nodes SET id = idx(geom); 
 " | $PSQL || fail && pass
 
 log "Creating Way Table" 2
 echo "
     CREATE TABLE ways (
-        id UNIQUE BIGINT,
+        id BIGINT UNIQUE,
         nodes BIGINT[],
         tags HSTORE
     );
