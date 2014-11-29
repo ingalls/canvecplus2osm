@@ -2,14 +2,27 @@
 set -e
 
 source $(dirname $0)/logger.sh
-log "Generating OSM table scheme" 2
-psql -q -U postgres canvec -f $(dirname $0)/osm_schema.sql 2>/dev/null || fail && pass
-psql -q -U postgres canvec -f $(dirname $0)/ref_node.sql   2>/dev/null
+PSQL="psql -q -U postgres canvec"
+
+log "Turn off Pset" 2
+echo "\\pset pager off" | $PSQL || fail && pass
+
+log "Clearing Tables" 2
+echo "
+    DROP TABLE IF EXISTS nodes;
+    DROP TABLE IF EXISTS ways;
+    DROP TABLE IF EXISTS relations;
+" | $PSQL &>/dev/null || fail && pass
+
+
+log "Loading ref_node()" 2
+$PSQL -f $(dirname $0)/ref_node.sql &>/dev/null || fail && pass
+log "Loading idx()" 2
+$PSQL -f $(dirname $0)/ref_node.sql &>/dev/null || fail && pass
+
 
 CPUNUM=$(node -e 'console.log(require("os").cpus().length);')
 CPUSEQ=$(seq 0 $(node -e 'console.log(require("os").cpus().length - 1);'))
-PSQL="psql -q -U postgres canvec"
-ID="('x'||substr(md5(geom::TEXT), 0, 9))::bit(32)::bigint"
 
 log "Creating node references" 2
 echo "
@@ -19,8 +32,17 @@ echo "
         (SELECT (ST_DumpPoints(geom)).geom FROM osm_pg);
 
     ALTER TABLE nodes ADD COLUMN tags HSTORE;
-    ALTER TABLE nodes ADD COLUMN id BIGINT;
-    UPDATE nodes SET id = $ID; 
+    ALTER TABLE nodes ADD COLUMN id UNIQUE BIGINT;
+    UPDATE nodes SET id = idx(geom); 
+" | $PSQL || fail && pass
+
+log "Creating Way Table" 2
+echo "
+    CREATE TABLE ways (
+        id UNIQUE BIGINT,
+        nodes BIGINT[],
+        tags HSTORE
+    );
 " | $PSQL || fail && pass
 
 RES="ln pg"
