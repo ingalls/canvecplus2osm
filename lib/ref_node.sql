@@ -13,11 +13,10 @@ BEGIN
         END LOOP;
         INSERT INTO ways(nodes, tags) VALUES (nodeArray, tags);
     ELSIF GeometryType(poly) = 'MULTIPOLYGON' THEN
-        RAISE NOTICE count(ST_Dump(poly));
-        IF count(ST_Dump(poly)) = 1 THEN
-            RAISE NOTICE 'POLY';
+        IF (SELECT ST_NumInteriorRing(poly)) = 1 THEN
+            RAISE NOTICE 'WAY';
         ELSE
-            RAISE NOTICE 'MULTIPOLY';
+            RAISE NOTICE 'RELATION';
         END IF; 
     ELSE
         RAISE NOTICE 'GEOMETRY TYPE NOT CURRENTLY SUPPORTED';

@@ -30,13 +30,13 @@ parallel "echo \"UPDATE nodes SET tags = osm_tags FROM osm_pt WHERE ST_Equals(os
 
 log "Converting Line Geometry to Ways with node references" 2 
 echo "
-    SELECT ref_node(geom, osm_tags) FROM osm_ln;
-" | $PSQL
-warn
+    SELECT ref_node(n.geom, n.osm_tags) FROM (SELECT (ST_Dump(ST_Union(geom))).geom, osm_tags FROM osm_ln GROUP BY osm_tags) AS n;
+" | $PSQL &>/dev/null || fail && pass
 
 log "Converting Non-Multi Polygonal Geometry to Ways with node references" 2
-#@TODO
-warn
+echo "
+    SELECT ref_node(n.geom, n.osm_tags) FROM (SELECT (ST_Dump(ST_Union(geom))).geom, osm_tags FROM osm_pg GROUP BY osm_tags) AS n;
+" | $PSQL &>/dev/null || fail && pass
 
 log "Converting Multi Polygonal Area to Relations with way references" 2
 #@TODO
